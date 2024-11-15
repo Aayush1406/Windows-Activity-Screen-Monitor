@@ -23,6 +23,7 @@ class KeyListener:
         self.idt_end_active = False
         self.idt_duration_active = False
         self.database_manager = None
+        self.current_id_inserted = None
 
 
     def start_listener(self):
@@ -76,8 +77,11 @@ class KeyListener:
     def stop_idle_timer(self):
         if self.idt_start_active:
             self.idt_stop = time.time()
-            self.idt_start_active = False
             print("Idle period stopped at", datetime.fromtimestamp(self.idt_stop))
+            self.calculate_idt_duration()
+
+            self.idt_start_active = False
+            
 
     def calculate_idt_duration(self):
         # Calculate the duration and add it to total idle duration
@@ -90,7 +94,7 @@ class KeyListener:
     def on_press_restart(self, key):
         if not self.active:
             self.stop_idle_timer()
-            self.calculate_idt_duration()
+            # self.calculate_idt_duration()
             self.start_listener()
             self.event.set()  # Resume main monitor loop
             print("Listener restarted!")
@@ -103,18 +107,18 @@ class KeyListener:
     def set_process_id_for_keyListener(self, session_id):
         if self.current_id != session_id:
             if self.current_id is not None:
-                print(f"idt_start_active = {self.idt_start_active}")
-                if self.idt_start_active:
+                if self.idt_start_active or self.current_id_inserted==False:
                     self.stop_idle_timer()
-                    self.calculate_idt_duration()
+                    # self.calculate_idt_duration()
                     print(f"Key Listener Session[{self.current_id}] total idle duration = {self.idt_duration}")
                     formatted_duration = str(timedelta(seconds=self.idt_duration))
                     self.database_manager.dump_keyListener_session_to_db(self.current_id, formatted_duration)
-                    print(type(self.idt_duration))
+                    self.current_id_inserted = True
             
             # Reset for the new session
             print(f"Starting new session Session[{session_id}]")
             self.current_id = session_id
+            self.current_id_inserted = False
             self.reset()
             
     def reset(self):
@@ -144,3 +148,6 @@ class KeyListener:
             self.main_monitor_th = threading.Thread(target=self.main_monitor)
             self.main_monitor_th.daemon = True        
             self.main_monitor_th.start()
+
+
+
