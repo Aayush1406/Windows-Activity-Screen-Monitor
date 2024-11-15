@@ -1,128 +1,146 @@
 import threading
-import time
 from pynput import keyboard
-from DatabaseManager import DatabaseManager
+import time
+from datetime import datetime
+from datetime import timedelta
 
 class KeyListener:
     
-    def __init__(self, timeout, database_manager):
-        self.timeout = timeout  
-        self.last_key_time = time.time()  
-        self.listener = None  
-        self.timer_thread = None  
-        self.active = False  
-        self.restart_event = threading.Event()
-        self.idle_start_time = 0
-        self.idle_end_time = 0
-        self.idle_duration = 0 
-        self.current_pid = None
-        self.old_pid = None
-        self.database_manager = database_manager
+    def __init__(self):
+               
+        self.listener = None
+        self.restart_listener = None
+        self.last_key_time = None
+        self.idt_start = 0
+        self.idt_stop = 0
+        self.idt_duration = 0
+        self.active = None
+        self.event = threading.Event()
+        self.current_id = None
+        self.main_monitor_th = None
+        self.lock = threading.Lock()
+        self.idt_start_active = False
+        self.idt_end_active = False
+        self.idt_duration_active = False
+        self.database_manager = None
 
-    def on_press(self, key):
-        self.last_key_time = time.time()
-        print(f"pressed {key}")
 
     def start_listener(self):
-        if  self.active==False:
-            self.listener = keyboard.Listener(on_press=self.on_press)
-            self.listener.start()
-            self.active = True
+        # Start the mouse listener
+        self.listener = keyboard.Listener(on_press=self.on_press)
+        self.listener.start()
+        with self.lock:
             self.last_key_time = time.time()
-            print("Listener started")
+        self.active = True 
+                
+    def on_press(self, key):
+        with self.lock:
+            self.last_key_time = time.time()
+            # Only reset if we're in idle state
+            if self.idt_start_active and not self.active:
+                self.stop_idle_timer()
+                self.calculate_idt_duration()
+                self.active = True  
 
     def stop_listener(self):
-        if self.listener is not None:
-            print("No key pressed for a minute, stopping listener...")
+        
+        if self.listener:
             self.listener.stop()
             self.listener = None
-            self.active = False
-
-    def monitor_activity(self):
+    
+    def main_monitor(self):
+        
         while True:
-            # Check for inactivity
-            if self.active == True and (time.time() - self.last_key_time) > self.timeout: # active == True is needed as if the start_listener is never started than 
-                
+            with self.lock:
+                idle = time.time() - self.last_key_time > 10
+            
+            if idle and self.active:
+                print(f"Session {self.current_id} detected idle state.")
+                self.start_idle_timer()
+                self.active = False
                 self.stop_listener()
-
-            # Wait for the restart event to be set, which happens on any key press
-            if self.active == False:
-                print("Waiting for key press to restart listener...")
-                self.start_idle_time()
-                self.restart_event.wait()  # Block until the event is set
-                self.restart_event.clear()  # Clear the event after restarting the list
-                print("here!!!")
-                self.start_listener()
-
-            time.sleep(1)  # Avoid busy waiting, check every second
-    
-    def start_idle_time(self):
-        print("Idle time calculation started......")
-        self.idle_start_time = time.time()
-        
-    def end_idle_time(self):
-        print("Idle time calculation end......")
-        self.idle_end_time = time.time()
-    
-    def calculate_idle_duration(self):
-        self.idle_duration = self.idle_duration + self.idle_end_time - self.idle_start_time 
-        
-        print("Idle duration = ", self.idle_duration)        
-
-
-    def monitor_keypress_for_restart(self):
-        # This method will always run a lightweight listener to catch key presses
-        def on_press_restart(key):
-            if self.active == False:
-                self.restart_event.set()  # Set the event to restart the main listener
-                self.end_idle_time()
-                self.calculate_idle_duration()
-
-        # This listener will always be active, independent of the main listener
-        restart_listener = keyboard.Listener(on_press=on_press_restart)
-        restart_listener.start()
-        
-    def set_process_id_for_keyListener(self,current_pid):
-        
-
-        if self.current_pid != current_pid:
-            if self.current_pid is not None:
-                self.end_idle_time()
-                self.calculate_idle_duration()  # Calculate the idle duration for the old PID
-                print(f"Idle Duration for PID {self.old_pid}: {self.idle_duration} seconds")  # Print idle duration for the old process
+            
+            if not self.active:
                 
-            # Reset and switch to the new PID
-            self.old_pid = self.current_pid  # Store the old PID
-            self.current_pid = current_pid  # Update the current PID
-            print(f"Switching to new PID: {self.current_pid}")
+                self.event.wait()
+                self.event.clear()
             
-            # Reset the idle timer for the new PID
-            self.reset_key_listener()
-            self.main()
+            time.sleep(1)
             
-   
+    def start_idle_timer(self):
+        if self.idt_start_active == False:
+            self.idt_start = time.time()
+            self.idt_start_active = True
+            print(f"Idle period started for [{self.current_id}] at", datetime.fromtimestamp(self.idt_start))
+            
+    def stop_idle_timer(self):
+        if self.idt_start_active:
+            self.idt_stop = time.time()
+            self.idt_start_active = False
+            print("Idle period stopped at", datetime.fromtimestamp(self.idt_stop))
 
-    def reset_key_listener(self):
-        self.idle_start_time = 0
-        self.idle_end_time = 0
-        self.idle_duration = 0 
-        self.last_key_time = time.time() 
+    def calculate_idt_duration(self):
+        # Calculate the duration and add it to total idle duration
+        if self.idt_start and self.idt_stop:
+            idle_time = self.idt_stop - self.idt_start
+            self.idt_duration += idle_time
+            print("Idle duration for this period:", idle_time, "seconds")
+            print("Total idle duration for current session:", self.idt_duration, "seconds")
 
-    def start(self):
+    def on_press_restart(self, key):
+        if not self.active:
+            self.stop_idle_timer()
+            self.calculate_idt_duration()
+            self.start_listener()
+            self.event.set()  # Resume main monitor loop
+            print("Listener restarted!")
 
+    def start_listener_monitor(self):
 
-        self.start_listener() # call the start_listener() method.
+        self.restart_listener = keyboard.Listener(on_press=self.on_press_restart)
+        self.restart_listener.start()
+            
+    def set_process_id_for_keyListener(self, session_id):
+        if self.current_id != session_id:
+            if self.current_id is not None:
+                print(f"idt_start_active = {self.idt_start_active}")
+                if self.idt_start_active:
+                    self.stop_idle_timer()
+                    self.calculate_idt_duration()
+                    print(f"Key Listener Session[{self.current_id}] total idle duration = {self.idt_duration}")
+                    formatted_duration = str(timedelta(seconds=self.idt_duration))
+                    self.database_manager.dump_keyListener_session_to_db(self.current_id, formatted_duration)
+                    print(type(self.idt_duration))
+            
+            # Reset for the new session
+            print(f"Starting new session Session[{session_id}]")
+            self.current_id = session_id
+            self.reset()
+            
+    def reset(self):
+        with self.lock:
+            self.last_key_time = time.time()
+        self.idt_start = 0
+        self.idt_stop = 0
+        self.idt_duration = 0
+        self.idt_duration_active = False
+        self.idt_start_active = False
+        self.event.set()
+    
+    def main(self, session_id, database_manager):
+        self.database_manager = database_manager
+        self.set_process_id_for_keyListener(session_id)
+        print("Session _ id = ", session_id)
         
-        self.timer_thread = threading.Thread(target=self.monitor_activity)        
-        self.timer_thread.daemon = True  # Daemon thread will automatically stop when the program exits        
-        self.timer_thread.start()
-
-        # Start the restart monitoring thread
-        restart_thread = threading.Thread(target=self.monitor_keypress_for_restart)
-        restart_thread.daemon = True
-        restart_thread.start()
-
-    def main(self):
-
-        self.start()
+        if self.listener is None:
+            self.start_listener()
         
+        if self.restart_listener is None:
+            start_listener_monitor_th = threading.Thread(target=self.start_listener_monitor)
+            start_listener_monitor_th.daemon = True
+            start_listener_monitor_th.start()
+        
+        if self.main_monitor_th is None:
+            self.main_monitor_th = threading.Thread(target=self.main_monitor)
+            self.main_monitor_th.daemon = True        
+            self.main_monitor_th.start()
