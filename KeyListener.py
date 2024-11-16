@@ -24,11 +24,13 @@ class KeyListener:
         self.idt_duration_active = False
         self.database_manager = None
         self.current_id_inserted = None
-
+        
+        self.key_press_counts = {}
+        self.key_hold_times = {}
 
     def start_listener(self):
         # Start the mouse listener
-        self.listener = keyboard.Listener(on_press=self.on_press)
+        self.listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
         self.listener.start()
         with self.lock:
             self.last_key_time = time.time()
@@ -38,11 +40,35 @@ class KeyListener:
         with self.lock:
             self.last_key_time = time.time()
             # Only reset if we're in idle state
+            key_str = str(key)
+
+            if key_str not in self.key_press_counts:
+                self.key_press_counts[key_str] = 0
+            self.key_press_counts[key_str]+=1
+
+            self.key_hold_times[key_str] = time.time()
+            
+            self.detect_unusual_behavior(key_str)
+
             if self.idt_start_active and not self.active:
                 self.stop_idle_timer()
                 self.calculate_idt_duration()
                 self.active = True  
 
+    def detect_unusual_behavior(self, key_str):
+        if self.key_press_counts[key_str]>10:
+            print(f"Alert: Excessive key press detected for key: {key_str}")
+            self.key_press_counts[key_str] = 0
+
+    def on_release(self, key):
+        with self.lock:
+            key_str = str(key)
+            
+            if key_str in self.key_hold_times:
+                hold_duration = time.time() - self.key_hold_times[key_str]
+                if hold_duration > 10:
+                    print(f"Alert Key {key_str} held for {hold_duration}")
+    
     def stop_listener(self):
         
         if self.listener:

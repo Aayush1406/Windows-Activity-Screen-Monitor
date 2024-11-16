@@ -1,5 +1,5 @@
 ('C:\\Users\\aayus\\OneDrive\\Desktop\\Python\\Windows Activity Monitoring '
- 'System\\build\\Controller\\PYZ-00.pyz',
+ 'System\\build\\controller\\PYZ-00.pyz',
  [('DatabaseManager',
    'C:\\Users\\aayus\\OneDrive\\Desktop\\Python\\Windows Activity Monitoring '
    'System\\DatabaseManager.py',

@@ -9,12 +9,17 @@ class DatabaseManager:
         
         self.connection_pool = pooling.MySQLConnectionPool(
             
+            # pool_name = "mypool",
+            # host="master-project.czyq6yq0ownh.us-east-1.rds.amazonaws.com",  
+            # user="aayush",  
+            # password="aayush140620",  
+            # database="device_data"      
+
             pool_name = "mypool",
             host="localhost",  
             user="grafanaReader",  
             password="aayush",  
-            database="Device_Data"      
-        
+            database="device_data"        
         )
     
     def get_connection(self):
