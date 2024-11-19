@@ -116,37 +116,4 @@ class ProcessMonitor:
         process = psutil.Process(self.current_pid)
         process_status = process.status()
         return process_status
- 
-    
-    #Database Interaction Methods:
-    
-    # def insert_foreground_process_details(self):        
-    #     foreground_process_details_dict = self.get_foreground_process_details_dict()
-    #     self.database_manager.insert_foreground_process_details_in_db(foreground_process_details_dict)
-            
-    # def set_window_end_time(self):
-    #     self.database_manager.insert_window_end_time_in_db(self.old_pid)               
-        
-    # def set_window_start_time(self):
-    #     self.set_window_status_to_active()    
-    #     self.database_manager.insert_window_start_time_in_db(self.current_pid)        
-
-    # def set_window_status_to_active(self):
-    #     self.database_manager.insert_window_status_to_active_in_db(self.current_pid)
-
-    # def set_window_status_to_inactive(self):      
-    #     self.database_manager.insert_window_status_to_inactive_in_db(self.old_pid)
-
-    # def set_process_status(self):
-    #    print("Set Process Status OLD PID = ", self.old_pid)
-    #    process_name = self._get_process_name(self.old_pid)
-    #    print("Set Process Status process name = ", process_name)       
-    #    self.database_manager.insert_process_status_in_db(self.old_pid,process_name)
-       
-    # def set_process_duration(self):
-    #     self.database_manager.set_process_duration_in_db(self.old_pid)
-    #     self.set_window_status_to_inactive()
-
-
-
 

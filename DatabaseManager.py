@@ -2,6 +2,7 @@ import pypyodbc as odbc
 import pyodbc
 from mysql.connector import pooling
 from datetime import datetime
+import pytz
 
 class DatabaseManager:
     
@@ -9,17 +10,12 @@ class DatabaseManager:
         
         self.connection_pool = pooling.MySQLConnectionPool(
             
-            # pool_name = "mypool",
-            # host="master-project.czyq6yq0ownh.us-east-1.rds.amazonaws.com",  
-            # user="aayush",  
-            # password="aayush140620",  
-            # database="device_data"      
-
-            pool_name = "mypool",
-            host="localhost",  
-            user="grafanaReader",  
-            password="aayush",  
-            database="device_data"        
+            pool_name = "",
+            host="",  
+            user="",  
+            password="",  
+            database=""      
+        
         )
     
     def get_connection(self):
@@ -28,6 +24,7 @@ class DatabaseManager:
 
     def insert_foreground_process_details_in_db(self,foreground_process_details_dict):
         try:
+            print("++++++++++++++++++++Here++++++++++++++++++++")
             conn = self.get_connection()
             cursor = conn.cursor()    
             insert_query = """ 
@@ -83,16 +80,28 @@ class DatabaseManager:
 
     def insert_window_start_db(self, foreground_details_dict):
         try:
+            
+            print(foreground_details_dict.get('window_title'),foreground_details_dict.get('child_name'), foreground_details_dict.get('executable_path'),
+                                        foreground_details_dict.get('process_name'),foreground_details_dict.get('process_status'),foreground_details_dict.get('process_create_time'),
+                                        foreground_details_dict.get('current_pid'), foreground_details_dict.get('current_handle'), None,foreground_details_dict.get('window_start_time'))
+            
             conn = self.get_connection()
             cursor = conn.cursor()    
             insert_query = """ 
-            INSERT INTO applicationusagelogs(Window_Title, Child_Name, Executable_Path, Process_Name, Process_Status, Process_Create_Time ,Process_id, Current_Handle, Duration, Window_Start_Time, Window_End_Time, Window_Active_Status)
+            INSERT INTO device_data.applicationusagelogs(Window_Title, Child_Name, Executable_Path, Process_Name, Process_Status, Process_Create_Time ,Process_id, Current_Handle, Duration, Window_Start_Time, Window_End_Time, Window_Active_Status)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s ,%s , %s, %s ) """
             cursor.execute(insert_query,(foreground_details_dict.get('window_title'),foreground_details_dict.get('child_name'), foreground_details_dict.get('executable_path'),
                                         foreground_details_dict.get('process_name'),foreground_details_dict.get('process_status'),foreground_details_dict.get('process_create_time'),
                                         foreground_details_dict.get('current_pid'), foreground_details_dict.get('current_handle'), None,foreground_details_dict.get('window_start_time') , None, 'Active' ))
+            
+            print("Start_Time = ",foreground_details_dict.get('window_start_time'))
+            
+
             conn.commit()
             print("record inserted into db successfully !")
+            
+        except Exception as e:
+            print(f"Error = {e}")
         finally:
             if conn.is_connected():
                 cursor.close()
@@ -106,7 +115,7 @@ class DatabaseManager:
             update_query = """ update applicationusagelogs set Window_End_Time = %s, Duration = %s, Window_Active_Status = %s  where id = %s """
             cursor.execute(update_query,(end_time, duration,'Inactive', current_session_id))
             conn.commit()
-            print("record inserted into db successfully !")
+            # print("record inserted into db successfully !")
         finally:
             if conn.is_connected():
                 cursor.close()
@@ -125,7 +134,7 @@ class DatabaseManager:
             
             if record_value:
                 update_query = "Update applicationusagelogs set Window_End_Time = %s where Process_id = %s and Window_Active_Status=%s"
-                current_time = datetime.now()
+                current_time = datetime.now(pytz.UTC)
             
                 cursor.execute(update_query, (current_time, old_pid,'Active'))
                 conn.commit()
@@ -144,7 +153,7 @@ class DatabaseManager:
             conn = self.get_connection()
             cursor = conn.cursor() 
             update_query = "Update ApplicationUsageLogs set Window_Start_Time = %s where Process_id = %s and Window_Active_Status = %s"
-            current_time = datetime.now()
+            current_time = datetime.now(pytz.UTC)
             cursor.execute(update_query,(current_time, current_pid,'Active'))
             conn.commit()       
         finally:

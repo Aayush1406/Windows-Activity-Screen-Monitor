@@ -4,6 +4,7 @@ import win32gui
 import datetime
 from KeyListener import KeyListener
 from MouseListener import MouseListener
+import pytz
 
 class WindowMonitor:
     
@@ -74,7 +75,7 @@ class WindowMonitor:
             if new_window_title != self.current_window:
                 
                 if self.current_window and self.current_session_id is not None:
-                    end_time = datetime.datetime.now()
+                    end_time = datetime.datetime.now(pytz.UTC)
                     start_time = self.win_start_time[self.current_window]
                     duration = end_time - start_time
                     # self.update_window_end(self.current_session_id,end_time,duration)
@@ -83,7 +84,7 @@ class WindowMonitor:
                     self.update_window_end(self.current_session_id, end_time, duration)
                                     
                 self.current_window = new_window_title
-                self.win_start_time[new_window_title] = datetime.datetime.now()
+                self.win_start_time[new_window_title] = datetime.datetime.now(pytz.UTC)
                 self.current_handle = hwnd        
                 self.on_window_change(new_window_title, hwnd)
 
