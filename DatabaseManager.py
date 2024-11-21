@@ -10,11 +10,11 @@ class DatabaseManager:
         
         self.connection_pool = pooling.MySQLConnectionPool(
             
-            pool_name = "",
-            host="",  
-            user="",  
-            password="",  
-            database=""      
+            pool_name = "mypool",
+            host="myproj.c1kw466460a6.us-west-1.rds.amazonaws.com",  
+            user="aayush",  
+            password="aayush140620",  
+            database="device_data"      
         
         )
     
