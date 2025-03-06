@@ -47,14 +47,21 @@ class ProcessMonitor:
         print("Handle = ",self.current_handle)       
         
     def set_foreground_process_details(self):
+
+
         self.current_pid = self._get_foreground_process_id()
         self.executable_path = self._get_executable_path()
         self.child_name = self._get_uwp_app_name()
         self.window_title = self._get_window_title()
+        
+        if (self._get_process_name() == "ApplicationFrameHost.exe"):
+            self.process_name = self._get_window_title()
+        else:
+            self.process_name = self._get_process_name()
+        
         self.process_create_time = self._get_process_create_time()                
-        self.process_name = self._get_process_name()
         self.process_status = self._get_process_status()
-    
+        
     def get_foreground_process_details_dict(self,handle): 
         self.current_handle = handle 
         self.set_foreground_process_details()
@@ -101,8 +108,9 @@ class ProcessMonitor:
 
     def _get_process_create_time(self):
         process = psutil.Process(self.current_pid)    
-        process_create_time = datetime.fromtimestamp(process.create_time())        
-        return process_create_time
+        process_create_time = datetime.fromtimestamp(process.create_time())   
+        process_create_time_str = process_create_time.isoformat()     
+        return process_create_time_str
 
     def _get_process_name(self):
         try:

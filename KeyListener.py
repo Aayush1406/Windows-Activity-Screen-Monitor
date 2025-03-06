@@ -82,7 +82,7 @@ class KeyListener:
                 idle = time.time() - self.last_key_time > 10
             
             if idle and self.active:
-                print(f"Session {self.current_id} detected idle state.")
+                # print(f"Session {self.current_id} detected idle state.") 3/6
                 self.start_idle_timer()
                 self.active = False
                 self.stop_listener()
@@ -98,12 +98,12 @@ class KeyListener:
         if self.idt_start_active == False:
             self.idt_start = time.time()
             self.idt_start_active = True
-            print(f"Idle period started for [{self.current_id}] at", datetime.fromtimestamp(self.idt_start))
+            # print(f"Idle period started for [{self.current_id}] at", datetime.fromtimestamp(self.idt_start)) 3/6
             
     def stop_idle_timer(self):
         if self.idt_start_active:
             self.idt_stop = time.time()
-            print("Idle period stopped at", datetime.fromtimestamp(self.idt_stop))
+            # print("Idle period stopped at", datetime.fromtimestamp(self.idt_stop)) 3/6
             self.calculate_idt_duration()
 
             self.idt_start_active = False
@@ -114,8 +114,8 @@ class KeyListener:
         if self.idt_start and self.idt_stop:
             idle_time = self.idt_stop - self.idt_start
             self.idt_duration += idle_time
-            print("Idle duration for this period:", idle_time, "seconds")
-            print("Total idle duration for current session:", self.idt_duration, "seconds")
+            # print("Idle duration for this period:", idle_time, "seconds") 3/6
+            # print("Total idle duration for current session:", self.idt_duration, "seconds") 3/6
 
     def on_press_restart(self, key):
         if not self.active:
@@ -136,13 +136,14 @@ class KeyListener:
                 if self.idt_start_active or self.current_id_inserted==False:
                     self.stop_idle_timer()
                     # self.calculate_idt_duration()
-                    print(f"Key Listener Session[{self.current_id}] total idle duration = {self.idt_duration}")
+                    
+                    # print(f"Key Listener Session[{self.current_id}] total idle duration = {self.idt_duration}") 3/6
                     formatted_duration = str(timedelta(seconds=self.idt_duration))
                     self.database_manager.dump_keyListener_session_to_db(self.current_id, formatted_duration)
                     self.current_id_inserted = True
             
             # Reset for the new session
-            print(f"Starting new session Session[{session_id}]")
+            # print(f"Starting new session Session[{session_id}]") 3/6
             self.current_id = session_id
             self.current_id_inserted = False
             self.reset()
@@ -160,7 +161,7 @@ class KeyListener:
     def main(self, session_id, database_manager):
         self.database_manager = database_manager
         self.set_process_id_for_keyListener(session_id)
-        print("Session _ id = ", session_id)
+        # print("Session _ id = ", session_id) 3/6
         
         if self.listener is None:
             self.start_listener()

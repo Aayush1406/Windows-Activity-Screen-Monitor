@@ -1,3 +1,6 @@
+# Starting point.
+# Main function.
+
 from KeyListener import KeyListener
 from ProcessMonitor import ProcessMonitor
 from MouseListener import MouseListener
@@ -7,11 +10,11 @@ import threading
 
 class Controller:
     def __init__(self):
-        self.window_monitor = WindowMonitor()
+        self.window_monitor = WindowMonitor() # initialising Window Monitor
         
-        self.process_monitor = ProcessMonitor(self.window_monitor)
+        self.process_monitor = ProcessMonitor(self.window_monitor) # initialising Process Monitor
 
-        self.database_manager = DatabaseManager()
+        self.database_manager = DatabaseManager() #initialisnig Database Manager
 
     
     def run_window_monitor(self):
@@ -20,7 +23,7 @@ class Controller:
 if __name__=="__main__":          
 
     controller = Controller()
-    window_monitor_thread = threading.Thread(target = controller.run_window_monitor)
+    window_monitor_thread = threading.Thread(target = controller.run_window_monitor) # Parent thread
     
     window_monitor_thread.daemon = True
 

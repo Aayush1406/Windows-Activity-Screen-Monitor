@@ -78,9 +78,7 @@ class WindowMonitor:
                     end_time = datetime.datetime.now(pytz.UTC)
                     start_time = self.win_start_time[self.current_window]
                     duration = end_time - start_time
-                    # self.update_window_end(self.current_session_id,end_time,duration)
-                    print(f"Duration = {duration}")                                   
-                    print("window end time = ",end_time)
+
                     self.update_window_end(self.current_session_id, end_time, duration)
                                     
                 self.current_window = new_window_title
@@ -90,22 +88,24 @@ class WindowMonitor:
 
             
     def on_window_change(self, new_window_title, hwnd):
-        print("------------------------------------")
+        print("------------------------------------")    
 
         foreground_details_dict = self.process_monitor.get_foreground_process_details_dict(hwnd)
-        # self.process_monitor.print_foreground_process_details(self.current_handle)
-        # print("window start time = ",self.win_start_time.get(self.current_window))
-        foreground_details_dict['window_start_time'] = self.win_start_time.get(self.current_window) 
+        window_start_time_str = self.win_start_time.get(self.current_window)
+        foreground_details_dict['window_start_time'] =  window_start_time_str.isoformat()
         self.current_session_id = self.insert_window_start(foreground_details_dict)
         self.mouse_listener.main(self.current_session_id,self.database_manager)
         self.key_listener.main(self.current_session_id,self.database_manager)        
 
     def insert_window_start(self,foreground_details_dict):
-        print(foreground_details_dict)
+        # print(foreground_details_dict)
+        print("Process Name = ",foreground_details_dict['process_name'])
+        print("Window Title = ",foreground_details_dict['window_title'])
         return self.database_manager.insert_window_start_db(foreground_details_dict)        
     
     def update_window_end(self,current_session_id, end_time, duration):
-        self.database_manager.update_window_end_db(current_session_id, end_time, duration)
+        end_time_str = end_time.isoformat()
+        self.database_manager.update_window_end_db(current_session_id, end_time_str, str(duration))
        
     def main(self, process_monitor,database_manager):
        
